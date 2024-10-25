@@ -1,8 +1,8 @@
 use std::str::FromStr;
 
 pub struct Location {
-    name: String,
-    coordinates: (f32, f32),
+    pub name: String,
+    pub coordinates: (f32, f32),
 }
 
 impl Default for Location {
