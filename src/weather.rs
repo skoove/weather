@@ -3,40 +3,43 @@ use serde_derive;
 
 const WEATHER_API: &str = "https://api.open-meteo.com/v1/forecast?";
 
-struct WeatherRequest {
+pub struct WeatherRequest {
     location: Location,
 }
 
-#[derive(serde_derive::Deserialize)]
-struct WeatherResponse {
-    current_weather_units: CurrentWeatherUnits,
-    current_weather: CurrentWeather,
+#[derive(serde_derive::Deserialize, Debug)]
+#[allow(dead_code)]
+pub struct WeatherResponse {
+    pub current_weather_units: CurrentWeatherUnits,
+    pub current_weather: CurrentWeather,
 }
 
-#[derive(serde_derive::Deserialize)]
-struct CurrentWeather {
-    time: String,
-    interval: i16,
-    temperature: f32,
-    windspeed: f32,
-    winddirection: i16,
-    is_day: i16,
-    weathercode: i16,
+#[derive(serde_derive::Deserialize, Debug)]
+#[allow(dead_code)]
+pub struct CurrentWeather {
+    pub time: String,
+    pub interval: i16,
+    pub temperature: f32,
+    pub windspeed: f32,
+    pub winddirection: i16,
+    pub is_day: i16,
+    pub weathercode: i16,
 }
 
-#[derive(serde_derive::Deserialize)]
-struct CurrentWeatherUnits {
-    time: String,
-    interval: String,
-    temperature: String,
-    windspeed: String,
-    winddirection: String,
-    is_day: String,
-    weathercode: String,
+#[derive(serde_derive::Deserialize, Debug)]
+#[allow(dead_code)]
+pub struct CurrentWeatherUnits {
+    pub time: String,
+    pub interval: String,
+    pub temperature: String,
+    pub windspeed: String,
+    pub winddirection: String,
+    pub is_day: String,
+    pub weathercode: String,
 }
 
 impl WeatherRequest {
-    pub async fn request_weather(location: Location) -> WeatherResponse {
+    pub async fn request_weather(location: &Location) -> WeatherResponse {
         let (lat, long) = location.coordinates;
         let data_to_request = "current_weather=true";
 
