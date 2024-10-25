@@ -3,10 +3,6 @@ use serde_derive;
 
 const WEATHER_API: &str = "https://api.open-meteo.com/v1/forecast?";
 
-pub struct WeatherRequest {
-    location: Location,
-}
-
 #[derive(serde_derive::Deserialize, Debug)]
 #[allow(dead_code)]
 pub struct WeatherResponse {
@@ -38,22 +34,20 @@ pub struct CurrentWeatherUnits {
     pub weathercode: String,
 }
 
-impl WeatherRequest {
-    pub async fn request_weather(location: &Location) -> WeatherResponse {
-        let (lat, long) = location.coordinates;
-        let data_to_request = "current_weather=true";
+pub async fn request_weather(location: &Location) -> WeatherResponse {
+    let (lat, long) = location.coordinates;
+    let data_to_request = "current_weather=true";
 
-        let url = String::from(format!(
-            "{WEATHER_API}latitude={lat}&longitude={long}&{data_to_request}"
-        ));
+    let url = String::from(format!(
+        "{WEATHER_API}latitude={lat}&longitude={long}&{data_to_request}"
+    ));
 
-        let api_response = reqwest::get(url)
-            .await
-            .unwrap()
-            .json::<WeatherResponse>()
-            .await
-            .unwrap();
+    let api_response = reqwest::get(url)
+        .await
+        .unwrap()
+        .json::<WeatherResponse>()
+        .await
+        .unwrap();
 
-        api_response
-    }
+    api_response
 }
