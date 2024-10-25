@@ -10,15 +10,13 @@ use utils::*;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
+    log("hello!", false);
     let location = Location::default();
-
-    log("this is a good thing to happen, yeah", false);
-    log("this is NOT good", true);
 
     let weather_response = weather::request_weather(&location).await;
 
     println!("{}", location.name);
-    println!("{}", weather_response.current_weather.temperature);
+    println!("{}", weather_response.unwrap().current_weather.temperature);
 
     Ok(())
 }
