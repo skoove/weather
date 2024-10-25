@@ -1,4 +1,6 @@
 use crate::location::Location;
+use crate::utils::*;
+use reqwest::Error;
 use serde_derive;
 
 const WEATHER_API: &str = "https://api.open-meteo.com/v1/forecast?";
@@ -34,20 +36,29 @@ pub struct CurrentWeatherUnits {
     pub weathercode: String,
 }
 
-pub async fn request_weather(location: &Location) -> WeatherResponse {
+pub async fn request_weather(location: &Location) -> Result<WeatherResponse, Error> {
     let (lat, long) = location.coordinates;
     let data_to_request = "current_weather=true";
 
-    let url = String::from(format!(
-        "{WEATHER_API}latitude={lat}&longitude={long}&{data_to_request}"
-    ));
+    let url = format!("{WEATHER_API}latitude={lat}&longitude={long}&{data_to_request}");
 
-    let api_response = reqwest::get(url)
-        .await
-        .unwrap()
-        .json::<WeatherResponse>()
-        .await
-        .unwrap();
+    let mut attempts = 0;
 
-    api_response
+    loop {
+        match reqwest::get(&url).await?.json::<WeatherResponse>().await {
+            Ok(response) => {
+                log("retrieved current weather data", false);
+                return Ok(response);
+            }
+            Err(err) => {
+                attempts += 1;
+                if attempts == 3 {
+                    log("failed to get current weather data, giving up", true);
+                    return Err(err);
+                } else {
+                    log("failed to get current weather data, retrying...", true)
+                }
+            }
+        }
+    }
 }
