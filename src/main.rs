@@ -1,13 +1,20 @@
-use reqwest::Error;
-use tokio;
-
 mod location;
 mod ui;
 mod weather;
 
+use location::Location;
+use reqwest::Error;
+use tokio;
+use weather::WeatherRequest;
+
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    println!("weather!!");
+    let location = Location::default();
+
+    let weather_response = WeatherRequest::request_weather(&location).await;
+
+    println!("{}", location.name);
+    println!("{}", weather_response.current_weather.temperature);
 
     Ok(())
 }
