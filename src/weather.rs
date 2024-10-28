@@ -36,7 +36,7 @@ pub struct CurrentWeatherUnits {
     pub weathercode: String,
 }
 
-pub async fn request_weather(location: &Location) -> Result<WeatherResponse, Error> {
+pub fn request_weather(location: Location) -> Result<WeatherResponse, Error> {
     let (lat, long) = location.coordinates;
     let data_to_request = "current_weather=true";
 
@@ -44,19 +44,39 @@ pub async fn request_weather(location: &Location) -> Result<WeatherResponse, Err
 
     let mut attempts = 0;
 
+    log(
+        format!(
+            "attempting to retrive current weather for {}",
+            location.name
+        ),
+        LogStatus::Info,
+    );
+
     loop {
-        match reqwest::get(&url).await?.json::<WeatherResponse>().await {
+        match reqwest::blocking::get(&url) {
             Ok(response) => {
-                log("retrieved current weather data", false);
-                return Ok(response);
+                log(
+                    "retrieved current weather data".to_string(),
+                    LogStatus::Good,
+                );
+                return Ok(response.json::<WeatherResponse>().unwrap());
             }
             Err(err) => {
                 attempts += 1;
                 if attempts == 3 {
-                    log("failed to get current weather data, giving up", true);
+                    log(
+                        format!(
+                            "failed to retrive data attempt {}/3, giving up, error: {}",
+                            attempts, err
+                        ),
+                        LogStatus::Bad,
+                    );
                     return Err(err);
                 } else {
-                    log("failed to get current weather data, retrying...", true)
+                    log(
+                        format!("failed to retrive data attempt {}/3", attempts),
+                        LogStatus::Warn,
+                    )
                 }
             }
         }
