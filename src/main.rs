@@ -3,13 +3,19 @@ mod ui;
 mod utils;
 mod weather;
 
+use eframe::NativeOptions;
 use location::Location;
+use ui::WeatherApp;
 use utils::*;
 use weather::request_weather;
 
 fn main() {
-    let location = Location::default();
-    log(format!("hello"), LogStatus::Info);
+    log(format!("hello world"), LogStatus::Info);
 
-    let weather = request_weather(location);
+    let native_options = NativeOptions::default();
+    eframe::run_native(
+        "weather",
+        native_options,
+        Box::new(|cc| Ok(Box::new(WeatherApp::new(&cc)))),
+    );
 }
