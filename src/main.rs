@@ -10,6 +10,7 @@ use utils::*;
 fn main() {
     log(format!("hello world"), LogStatus::Info);
 
+    // default run options
     let native_options = NativeOptions::default();
     eframe::run_native(
         "weather",

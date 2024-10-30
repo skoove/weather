@@ -15,6 +15,7 @@ impl WeatherApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         log(format!("created app"), LogStatus::Good);
 
+        // make thread communication channels
         let (tx, rx) = mpsc::channel();
         Self {
             weather_request_in_progress: false,
@@ -41,14 +42,17 @@ impl eframe::App for WeatherApp {
                 ui.spinner();
                 self.weather_data = if let Ok(value) = self.rx.try_recv() {
                     self.weather_request_in_progress = false;
-                    Some(value).expect("expected to be able to recive weather data")
+                    Some(value)
                 } else {
                     None
                 }
             }
 
-            if self.weather_data.is_some() {
-                ui.heading(format!("{}", weather_data.CurrentWeather.temperature_2m);
+            if let Some(weather) = &self.weather_data {
+                ui.label(format!(
+                    "current temperature: {0:.0}{1}",
+                    weather.current_weather.temperature, weather.current_weather_units.temperature,
+                ));
             }
         });
     }

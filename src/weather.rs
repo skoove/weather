@@ -41,22 +41,25 @@ pub struct CurrentWeatherUnits {
 
 pub fn request_weather(location: Location, tx: Sender<WeatherResponse>) {
     thread::spawn(move || {
+        // pull coords out
         let (lat, long) = location.coordinates;
         let data_to_request = "current_weather=true";
 
+        // data to request
         let url = format!("{WEATHER_API}latitude={lat}&longitude={long}&{data_to_request}");
 
         let mut attempts = 0;
 
         log(
             format!(
-                "attempting to retrive current weather for {}",
-                location.name
+                "attempting to retrive current weather for {}, {}",
+                location.place_name, location.country_name
             ),
             LogStatus::Info,
         );
 
         loop {
+            // request the url, if it fails try again 3 times, if that fails return nothing
             match reqwest::blocking::get(&url) {
                 Ok(response) => {
                     log(
@@ -64,8 +67,10 @@ pub fn request_weather(location: Location, tx: Sender<WeatherResponse>) {
                         LogStatus::Good,
                     );
 
+                    // deserialise response
                     let deserialised_response = response.json::<WeatherResponse>().unwrap();
 
+                    // send response back
                     tx.send(deserialised_response);
                     break;
                 }
