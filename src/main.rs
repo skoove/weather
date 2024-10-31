@@ -5,10 +5,9 @@ mod weather;
 
 use eframe::NativeOptions;
 use ui::WeatherApp;
-use utils::*;
 
 fn main() {
-    log(format!("hello world"), LogStatus::Info);
+    log_info!("hello!");
 
     // default run options
     let native_options = NativeOptions::default();

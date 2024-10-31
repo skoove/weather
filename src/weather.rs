@@ -1,10 +1,8 @@
-use std::thread::{self, JoinHandle};
-
 use crate::location::Location;
-use crate::utils::*;
-use reqwest::Error;
+use crate::{log_bad, log_good, log_info, log_warn};
 use serde_derive;
-use std::sync::mpsc::{self, Receiver, Sender};
+use std::sync::mpsc::Sender;
+use std::thread;
 
 const WEATHER_API: &str = "https://api.open-meteo.com/v1/forecast?";
 
@@ -43,6 +41,12 @@ pub fn request_weather(location: Location, tx: Sender<WeatherResponse>) {
     thread::spawn(move || {
         // pull coords out
         let (lat, long) = location.coordinates;
+        let Location {
+            place_name,
+            country_name,
+            ..
+        } = location;
+
         let data_to_request = "current_weather=true";
 
         // data to request
@@ -50,46 +54,32 @@ pub fn request_weather(location: Location, tx: Sender<WeatherResponse>) {
 
         let mut attempts = 0;
 
-        log(
-            format!(
-                "attempting to retrive current weather for {}, {}",
-                location.place_name, location.country_name
-            ),
-            LogStatus::Info,
+        log_info!(
+            "attempting to retrive current weather for {} {}",
+            place_name,
+            country_name
         );
 
         loop {
             // request the url, if it fails try again 3 times, if that fails return nothing
             match reqwest::blocking::get(&url) {
                 Ok(response) => {
-                    log(
-                        "retrieved current weather data".to_string(),
-                        LogStatus::Good,
-                    );
+                    log_good!("retrieved current weather data");
 
                     // deserialise response
                     let deserialised_response = response.json::<WeatherResponse>().unwrap();
 
                     // send response back
-                    tx.send(deserialised_response);
+                    tx.send(deserialised_response).expect("expected to send");
                     break;
                 }
-                Err(err) => {
+                Err(_) => {
                     attempts += 1;
                     if attempts == 3 {
-                        log(
-                            format!(
-                                "failed to retrive data attempt {}/3, giving up, error: {}",
-                                attempts, err
-                            ),
-                            LogStatus::Bad,
-                        );
+                        log_bad!("failed to retrieve current weather!");
                         break;
                     } else {
-                        log(
-                            format!("failed to retrive data attempt {}/3", attempts),
-                            LogStatus::Warn,
-                        )
+                        log_warn!("failed to retrive weather data, attempt {}/3", attempts);
                     }
                 }
             }
