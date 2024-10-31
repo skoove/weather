@@ -1,5 +1,6 @@
-use crate::weather::{self, request_weather};
-use crate::{utils::*, weather::WeatherResponse};
+use crate::log_good;
+use crate::weather::request_weather;
+use crate::weather::WeatherResponse;
 use catppuccin_egui::{set_theme, MOCHA};
 use eframe::{self, egui};
 use std::sync::mpsc::{self, Receiver, Sender};
@@ -12,8 +13,8 @@ pub struct WeatherApp {
 }
 
 impl WeatherApp {
-    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        log(format!("created app"), LogStatus::Good);
+    pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
+        log_good!("created app");
 
         // make thread communication channels
         let (tx, rx) = mpsc::channel();
@@ -27,13 +28,11 @@ impl WeatherApp {
 }
 
 impl eframe::App for WeatherApp {
-    fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
         set_theme(ctx, MOCHA);
 
         egui::CentralPanel::default().show(ctx, |ui| {
             if ui.button("request weather").clicked() {
-                log(format!("weather request button clicked"), LogStatus::Info);
-
                 request_weather(crate::location::Location::default(), self.tx.clone());
                 self.weather_request_in_progress = true;
             };
