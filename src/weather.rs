@@ -1,5 +1,6 @@
 use crate::location::Location;
 use crate::{log_bad, log_good, log_info, log_warn};
+use reqwest::Error;
 use serde_derive;
 use std::sync::mpsc::Sender;
 use std::thread;
@@ -37,7 +38,7 @@ pub struct CurrentWeatherUnits {
     pub weathercode: String,
 }
 
-pub fn request_weather(location: Location, tx: Sender<WeatherResponse>) {
+pub fn request_weather(location: Location, tx: Sender<Result<WeatherResponse, Error>>) {
     thread::spawn(move || {
         // pull coords out
         let (lat, long) = location.coordinates;
@@ -55,7 +56,7 @@ pub fn request_weather(location: Location, tx: Sender<WeatherResponse>) {
         let mut attempts = 0;
 
         log_info!(
-            "attempting to retrive current weather for {} {}",
+            "attempting to retrive current weather for {}, {}",
             place_name,
             country_name
         );
@@ -70,13 +71,15 @@ pub fn request_weather(location: Location, tx: Sender<WeatherResponse>) {
                     let deserialised_response = response.json::<WeatherResponse>().unwrap();
 
                     // send response back
-                    tx.send(deserialised_response).expect("expected to send");
+                    tx.send(Ok(deserialised_response))
+                        .expect("expected to send to thread");
                     break;
                 }
-                Err(_) => {
+                Err(err) => {
                     attempts += 1;
                     if attempts == 3 {
                         log_bad!("failed to retrieve current weather!");
+                        tx.send(Err(err)).expect("expected to send to thread");
                         break;
                     } else {
                         log_warn!("failed to retrive weather data, attempt {}/3", attempts);

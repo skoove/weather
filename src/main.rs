@@ -2,12 +2,11 @@ mod location;
 mod ui;
 mod utils;
 mod weather;
-
 use eframe::NativeOptions;
 use ui::WeatherApp;
 
 fn main() {
-    log_info!("hello!");
+    log_info!("hello!, {}", 42);
 
     // default run options
     let native_options = NativeOptions::default();
