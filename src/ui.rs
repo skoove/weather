@@ -2,22 +2,28 @@ use crate::log_good;
 use crate::weather::request_weather;
 use crate::weather::WeatherResponse;
 use catppuccin_egui::{set_theme, MOCHA};
+use eframe::egui::Layout;
 use eframe::{self, egui};
+use reqwest::Error;
 use std::sync::mpsc::{self, Receiver, Sender};
 
 pub struct WeatherApp {
     weather_request_in_progress: bool,
     weather_data: Option<WeatherResponse>,
-    tx: Sender<WeatherResponse>,
-    rx: Receiver<WeatherResponse>,
+    tx: Sender<Result<WeatherResponse, Error>>,
+    rx: Receiver<Result<WeatherResponse, Error>>,
 }
 
 impl WeatherApp {
-    pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         log_good!("created app");
+
+        cc.egui_ctx.set_pixels_per_point(1.0);
+        set_theme(&cc.egui_ctx, MOCHA);
 
         // make thread communication channels
         let (tx, rx) = mpsc::channel();
+
         Self {
             weather_request_in_progress: false,
             tx,
@@ -29,30 +35,26 @@ impl WeatherApp {
 
 impl eframe::App for WeatherApp {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
-        set_theme(ctx, MOCHA);
+        // to make things not take forever
+        let s = self;
 
-        egui::CentralPanel::default().show(ctx, |ui| {
-            if ui.button("request weather").clicked() {
-                request_weather(crate::location::Location::default(), self.tx.clone());
-                self.weather_request_in_progress = true;
-            };
+        egui::CentralPanel::default().show(ctx, |ui| {});
 
-            if self.weather_request_in_progress {
-                ui.spinner();
-                self.weather_data = if let Ok(value) = self.rx.try_recv() {
-                    self.weather_request_in_progress = false;
-                    Some(value)
-                } else {
-                    None
-                }
-            }
+        // make a top bar for some buttons
+        egui::TopBottomPanel::top("top bar").show(ctx, |ui| {
+            // make buttons be side by side
+            ui.horizontal(|ui| {
+                // first group: left aligned
+                ui.with_layout(Layout::left_to_right(egui::Align::TOP), |ui| {
+                    ui.button("refresh");
+                    ui.button("theme");
+                });
 
-            if let Some(weather) = &self.weather_data {
-                ui.label(format!(
-                    "current temperature: {0:.0}{1}",
-                    weather.current_weather.temperature, weather.current_weather_units.temperature,
-                ));
-            }
+                // second group: right aligned
+                ui.with_layout(Layout::right_to_left(egui::Align::TOP), |ui| {
+                    ui.button("exit");
+                });
+            })
         });
     }
 }
