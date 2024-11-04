@@ -6,7 +6,7 @@ use eframe::NativeOptions;
 use ui::WeatherApp;
 
 fn main() {
-    log_info!("hello!, {}", 42);
+    log_info!("hello!");
 
     // default run options
     let native_options = NativeOptions::default();
