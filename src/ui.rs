@@ -46,13 +46,13 @@ impl eframe::App for WeatherApp {
             ui.horizontal(|ui| {
                 // first group: left aligned
                 ui.with_layout(Layout::left_to_right(egui::Align::TOP), |ui| {
-                    ui.button("refresh");
-                    ui.button("theme");
+                    ui.button("↻");
+                    ui.button("🔆");
                 });
 
                 // second group: right aligned
                 ui.with_layout(Layout::right_to_left(egui::Align::TOP), |ui| {
-                    ui.button("exit");
+                    ui.button("❌");
                 });
             })
         });
