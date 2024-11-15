@@ -1,8 +1,10 @@
+use crate::location::Location;
 use crate::log_good;
 use crate::weather::request_weather;
 use crate::weather::WeatherResponse;
 use catppuccin_egui::{set_theme, MOCHA};
 use eframe::egui::Layout;
+use eframe::egui::Ui;
 use eframe::{self, egui};
 use reqwest::Error;
 use std::sync::mpsc::{self, Receiver, Sender};
@@ -31,12 +33,34 @@ impl WeatherApp {
             weather_data: None,
         }
     }
+
+    fn refresh_button(&mut self, ui: &mut Ui) {
+        if ui.button("↻").clicked() {
+            request_weather(Location::default(), self.tx.clone());
+        }
+    }
+
+    fn exit_button(&mut self, ui: &mut Ui) {
+        if ui.button("❌").clicked() {
+            panic!("closed app");
+        }
+    }
+
+    fn try_recv_wdata(&mut self) {
+        if let Ok(weather_data) = self.rx.try_recv() {
+            self.weather_data = Some(weather_data.unwrap());
+            self.weather_request_in_progress = false;
+        }
+    }
 }
 
 impl eframe::App for WeatherApp {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
-        // to make things not take forever
         let s = self;
+
+        if s.weather_request_in_progress == true {
+            s.try_recv_wdata();
+        }
 
         egui::CentralPanel::default().show(ctx, |ui| {});
 
@@ -46,13 +70,12 @@ impl eframe::App for WeatherApp {
             ui.horizontal(|ui| {
                 // first group: left aligned
                 ui.with_layout(Layout::left_to_right(egui::Align::TOP), |ui| {
-                    ui.button("↻");
-                    ui.button("🔆");
+                    s.refresh_button(ui);
                 });
 
                 // second group: right aligned
                 ui.with_layout(Layout::right_to_left(egui::Align::TOP), |ui| {
-                    ui.button("❌");
+                    s.exit_button(ui);
                 });
             })
         });
