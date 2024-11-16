@@ -47,7 +47,8 @@ impl WeatherApp {
     }
 
     fn try_recv_wdata(&mut self) {
-        if let Ok(weather_data) = self.rx.try_recv() {
+        // check if data is there
+        if let weather_data = self.rx.try_recv().unwrap() {
             self.weather_data = Some(weather_data.unwrap());
             self.weather_request_in_progress = false;
         }
@@ -58,6 +59,7 @@ impl eframe::App for WeatherApp {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
         let s = self;
 
+        // if there is a request in progress, check for data then write data down
         if s.weather_request_in_progress == true {
             s.try_recv_wdata();
         }
