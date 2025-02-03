@@ -3,6 +3,7 @@ use crate::log_good;
 use crate::weather::request_weather;
 use crate::weather::WeatherResponse;
 use catppuccin_egui::{set_theme, MOCHA};
+use chrono::format;
 use eframe::egui::Layout;
 use eframe::egui::Ui;
 use eframe::{self, egui};
@@ -42,29 +43,35 @@ impl WeatherApp {
 
     fn exit_button(&mut self, ui: &mut Ui) {
         if ui.button("❌").clicked() {
-            panic!("closed app");
+            // exit app with code 0 (good :D)
+            log_good!("exited with code 0");
+            std::process::exit(0);
         }
     }
 
     fn try_recv_wdata(&mut self) {
         // check if data is there
-        if let weather_data = self.rx.try_recv().unwrap() {
-            self.weather_data = Some(weather_data.unwrap());
-            self.weather_request_in_progress = false;
-        }
+        let weather_data = self.rx.try_recv().unwrap();
+        if let  =  {
+            
+        }self.weather_data = Some(weather_data.unwrap());
+        self.weather_request_in_progress = false;
     }
 }
 
 impl eframe::App for WeatherApp {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
-        let s = self;
-
         // if there is a request in progress, check for data then write data down
-        if s.weather_request_in_progress == true {
-            s.try_recv_wdata();
+        if self.weather_request_in_progress == true {
+            self.try_recv_wdata();
         }
 
-        egui::CentralPanel::default().show(ctx, |ui| {});
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.label(format!(
+                "{}",
+                self.weather_data.as_ref().current_weather.temperature
+            ))
+        });
 
         // make a top bar for some buttons
         egui::TopBottomPanel::top("top bar").show(ctx, |ui| {
@@ -72,12 +79,12 @@ impl eframe::App for WeatherApp {
             ui.horizontal(|ui| {
                 // first group: left aligned
                 ui.with_layout(Layout::left_to_right(egui::Align::TOP), |ui| {
-                    s.refresh_button(ui);
+                    self.refresh_button(ui);
                 });
 
                 // second group: right aligned
                 ui.with_layout(Layout::right_to_left(egui::Align::TOP), |ui| {
-                    s.exit_button(ui);
+                    self.exit_button(ui);
                 });
             })
         });
