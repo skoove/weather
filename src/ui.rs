@@ -1,9 +1,10 @@
 use crate::location::Location;
+use crate::log_bad;
 use crate::log_good;
+use crate::log_info;
 use crate::weather::request_weather;
 use crate::weather::WeatherResponse;
 use catppuccin_egui::{set_theme, MOCHA};
-use chrono::format;
 use eframe::egui::Layout;
 use eframe::egui::Ui;
 use eframe::{self, egui};
@@ -12,7 +13,7 @@ use std::sync::mpsc::{self, Receiver, Sender};
 
 pub struct WeatherApp {
     weather_request_in_progress: bool,
-    weather_data: Option<WeatherResponse>,
+    weather_data: WeatherResponse,
     tx: Sender<Result<WeatherResponse, Error>>,
     rx: Receiver<Result<WeatherResponse, Error>>,
 }
@@ -31,13 +32,14 @@ impl WeatherApp {
             weather_request_in_progress: false,
             tx,
             rx,
-            weather_data: None,
+            weather_data: WeatherResponse::no_data(),
         }
     }
 
     fn refresh_button(&mut self, ui: &mut Ui) {
         if ui.button("↻").clicked() {
             request_weather(Location::default(), self.tx.clone());
+            self.weather_request_in_progress = true;
         }
     }
 
@@ -51,11 +53,16 @@ impl WeatherApp {
 
     fn try_recv_wdata(&mut self) {
         // check if data is there
-        let weather_data = self.rx.try_recv().unwrap();
-        if let  =  {
-            
-        }self.weather_data = Some(weather_data.unwrap());
-        self.weather_request_in_progress = false;
+        match self.rx.try_recv() {
+            Ok(data) => {
+                self.weather_data = {
+                    log_info!("{:#?}", data);
+                    self.weather_request_in_progress = false;
+                    data.unwrap()
+                }
+            }
+            Err(_) => (),
+        }
     }
 }
 
@@ -67,10 +74,12 @@ impl eframe::App for WeatherApp {
         }
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.label(format!(
-                "{}",
-                self.weather_data.as_ref().current_weather.temperature
-            ))
+            let wd = &self.weather_data;
+            ui.heading(" ");
+            ui.heading(format!(
+                "{}{}",
+                wd.current_weather.temperature, wd.current_weather_units.temperature
+            ));
         });
 
         // make a top bar for some buttons
