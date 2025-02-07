@@ -22,8 +22,7 @@ impl WeatherApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         log_good!("created app");
 
-        cc.egui_ctx.set_pixels_per_point(1.0);
-        set_theme(&cc.egui_ctx, MOCHA);
+        // set_theme(&cc.egui_ctx, MOCHA);
 
         // make thread communication channels
         let (tx, rx) = mpsc::channel();
@@ -40,14 +39,6 @@ impl WeatherApp {
         if ui.button("↻").clicked() {
             request_weather(Location::default(), self.tx.clone());
             self.weather_request_in_progress = true;
-        }
-    }
-
-    fn exit_button(&mut self, ui: &mut Ui) {
-        if ui.button("❌").clicked() {
-            // exit app with code 0 (good :D)
-            log_good!("exited with code 0");
-            std::process::exit(0);
         }
     }
 
@@ -73,29 +64,28 @@ impl eframe::App for WeatherApp {
             self.try_recv_wdata();
         }
 
+        // make a top bar for some buttons
+        egui::TopBottomPanel::top("top bar")
+            .min_height(30.0)
+            .show(ctx, |ui| {
+                // make buttons be side by side
+                ui.horizontal_centered(|ui| {
+                    // first group: left aligned
+                    ui.with_layout(Layout::left_to_right(egui::Align::Center), |ui| {
+                        self.refresh_button(ui);
+                    });
+
+                    // second group: right aligned
+                    ui.with_layout(Layout::right_to_left(egui::Align::Center), |ui| {});
+                })
+            });
+
         egui::CentralPanel::default().show(ctx, |ui| {
             let wd = &self.weather_data;
-            ui.heading(" ");
             ui.heading(format!(
                 "{}{}",
                 wd.current_weather.temperature, wd.current_weather_units.temperature
             ));
-        });
-
-        // make a top bar for some buttons
-        egui::TopBottomPanel::top("top bar").show(ctx, |ui| {
-            // make buttons be side by side
-            ui.horizontal(|ui| {
-                // first group: left aligned
-                ui.with_layout(Layout::left_to_right(egui::Align::TOP), |ui| {
-                    self.refresh_button(ui);
-                });
-
-                // second group: right aligned
-                ui.with_layout(Layout::right_to_left(egui::Align::TOP), |ui| {
-                    self.exit_button(ui);
-                });
-            })
         });
     }
 }
