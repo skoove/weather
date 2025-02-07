@@ -95,8 +95,6 @@ pub fn request_weather(location: Location, tx: Sender<Result<WeatherResponse, Er
                     // deserialise response
                     let deserialised_response = response.json::<WeatherResponse>().unwrap();
 
-                    log_info!("{:?}", deserialised_response);
-
                     // send response back
                     tx.send(Ok(deserialised_response))
                         .expect("expected to send to thread");
