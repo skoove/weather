@@ -1,9 +1,8 @@
 use crate::location::Location;
-use crate::log_bad;
-use crate::log_good;
-use crate::log_info;
 use crate::weather::request_weather;
 use crate::weather::WeatherResponse;
+#[allow(unused_imports)]
+use crate::{log_bad, log_good, log_info};
 use eframe::egui::Layout;
 use eframe::egui::Ui;
 use eframe::{self, egui};
@@ -40,22 +39,28 @@ impl WeatherApp {
     }
 
     fn try_recv_wdata(&mut self) {
-        // check if data is there
-        match self.rx.try_recv() {
-            Ok(data) => {
-                self.weather_data = {
-                    log_info!("{:#?}", data);
+        // check if data from thread, dont care about if thread returns err because if it does there is no data
+        if let Ok(data) = self.rx.try_recv() {
+            // we do care about error from reqwest tho
+            match data {
+                Ok(data) => {
+                    self.weather_data = Some(data);
                     self.weather_request_in_progress = false;
-                    Some(data.unwrap())
+                }
+                Err(e) => {
+                    log_bad!("failed to retrive weather data! error: \n{}", e);
                 }
             }
-            Err(_) => (),
         }
     }
+
+    fn main_content(&mut self) {}
 }
 
 impl eframe::App for WeatherApp {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
+        // if there is no weather request in progress and there is no data present, start request for default location
+
         // if there is a request in progress, check for data then write data down
         if self.weather_request_in_progress == true {
             self.try_recv_wdata();
