@@ -38,31 +38,6 @@ pub struct CurrentWeatherUnits {
     pub weathercode: String,
 }
 
-impl WeatherResponse {
-    pub fn no_data() -> Self {
-        WeatherResponse {
-            current_weather_units: CurrentWeatherUnits {
-                time: "_".to_string(),
-                interval: "_".to_string(),
-                temperature: "_".to_string(),
-                windspeed: "_".to_string(),
-                winddirection: "_".to_string(),
-                is_day: "_".to_string(),
-                weathercode: "_".to_string(),
-            },
-            current_weather: CurrentWeather {
-                time: "_".to_string(),
-                interval: 0,
-                temperature: 0.0,
-                windspeed: 0.0,
-                winddirection: 0,
-                is_day: 0,
-                weathercode: 0,
-            },
-        }
-    }
-}
-
 pub fn request_weather(location: Location, tx: Sender<Result<WeatherResponse, Error>>) {
     thread::spawn(move || {
         // pull coords out
