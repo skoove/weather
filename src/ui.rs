@@ -1,3 +1,4 @@
+use crate::location::location_query;
 use crate::location::Location;
 use crate::weather::request_weather;
 use crate::weather::WeatherResponse;
@@ -16,9 +17,10 @@ pub struct WeatherApp {
     tx: Sender<Result<WeatherResponse, Error>>,
     rx: Receiver<Result<WeatherResponse, Error>>,
 }
-
+#[derive(Debug)]
 struct Input {
     location_box_contents: String,
+    location_box_query: String,
 }
 
 impl WeatherApp {
@@ -28,7 +30,8 @@ impl WeatherApp {
         // make thread communication channels
         let (tx, rx) = mpsc::channel();
         let input = Input {
-            location_box_contents: "test".to_string(),
+            location_box_contents: "enter location here!".to_string(),
+            location_box_query: "".to_string(),
         };
 
         Self {
@@ -49,6 +52,9 @@ impl WeatherApp {
 
     fn location_box(&mut self, ui: &mut Ui) {
         let text_box = ui.text_edit_singleline(&mut self.input.location_box_contents);
+
+        // if box is unfocused and there is weather data avalible, then display the location
+        // tied to that data
         if !text_box.has_focus() {
             match &self.weather_data {
                 Some(data) => {
@@ -60,6 +66,12 @@ impl WeatherApp {
                     self.input.location_box_contents = "enter location here!".to_string();
                 }
             }
+        }
+
+        // when boxes data changes change query and send request (todo), when the box looses focus
+        // keep query the same
+        if text_box.has_focus() {
+            self.input.location_box_query = self.input.location_box_contents.clone();
         }
     }
 
@@ -78,8 +90,6 @@ impl WeatherApp {
             }
         }
     }
-
-    fn main_content(&mut self) {}
 }
 
 impl eframe::App for WeatherApp {
@@ -114,6 +124,14 @@ impl eframe::App for WeatherApp {
         // centeral panel for main content
         egui::CentralPanel::default().show(ctx, |ui| {
             self.location_box(ui);
+
+            // debug stuff
+            if ui.button("call terst function!!!").clicked() {
+                location_query("boob".to_string(), 10);
+            }
+            ui.heading("input");
+            ui.label(format!("{:#?}", self.input));
+            ui.heading("weather data");
             ui.label(format!("{:#?}", self.weather_data));
         });
     }
