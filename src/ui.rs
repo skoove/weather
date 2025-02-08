@@ -12,22 +12,31 @@ use std::sync::mpsc::{self, Receiver, Sender};
 pub struct WeatherApp {
     weather_request_in_progress: bool,
     weather_data: Option<WeatherResponse>,
+    input: Input,
     tx: Sender<Result<WeatherResponse, Error>>,
     rx: Receiver<Result<WeatherResponse, Error>>,
 }
 
+struct Input {
+    location_box_contents: String,
+}
+
 impl WeatherApp {
-    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         log_good!("created app");
 
         // make thread communication channels
         let (tx, rx) = mpsc::channel();
+        let input = Input {
+            location_box_contents: "test".to_string(),
+        };
 
         Self {
             weather_request_in_progress: false,
+            weather_data: None,
+            input,
             tx,
             rx,
-            weather_data: None,
         }
     }
 
@@ -35,6 +44,22 @@ impl WeatherApp {
         if ui.button("↻").clicked() {
             request_weather(Location::default(), self.tx.clone());
             self.weather_request_in_progress = true;
+        }
+    }
+
+    fn location_box(&mut self, ui: &mut Ui) {
+        let text_box = ui.text_edit_singleline(&mut self.input.location_box_contents);
+        if !text_box.has_focus() {
+            match &self.weather_data {
+                Some(data) => {
+                    let place = &data.location.place_name;
+                    let country = &data.location.country_name;
+                    self.input.location_box_contents = format!("{place}, {country}")
+                }
+                None => {
+                    self.input.location_box_contents = "enter location here!".to_string();
+                }
+            }
         }
     }
 
@@ -59,7 +84,12 @@ impl WeatherApp {
 
 impl eframe::App for WeatherApp {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
-        // if there is no weather request in progress and there is no data present, start request for default location
+        // if there is no weather request in progress and there is
+        // no data present, start request for default location
+        if self.weather_request_in_progress == false && self.weather_data.is_none() {
+            request_weather(Location::default(), self.tx.clone());
+            self.weather_request_in_progress = true;
+        }
 
         // if there is a request in progress, check for data then write data down
         if self.weather_request_in_progress == true {
@@ -82,6 +112,9 @@ impl eframe::App for WeatherApp {
                 })
             });
         // centeral panel for main content
-        egui::CentralPanel::default().show(ctx, |ui| {});
+        egui::CentralPanel::default().show(ctx, |ui| {
+            self.location_box(ui);
+            ui.label(format!("{:#?}", self.weather_data));
+        });
     }
 }

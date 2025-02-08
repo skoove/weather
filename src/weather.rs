@@ -13,6 +13,8 @@ const WEATHER_API: &str = "https://api.open-meteo.com/v1/forecast?";
 pub struct WeatherResponse {
     pub current_weather_units: CurrentWeatherUnits,
     pub current_weather: CurrentWeather,
+    #[serde(skip_deserializing)]
+    pub location: Location,
 }
 
 #[derive(serde_derive::Deserialize, Debug)]
@@ -66,10 +68,13 @@ pub fn request_weather(location: Location, tx: Sender<Result<WeatherResponse, Er
             // request the url, if it fails try again 3 times, if that fails return nothing
             match reqwest::blocking::get(&url) {
                 Ok(response) => {
-                    log_good!("retrieved current weather dataself.rx.try_recv()");
-
                     // deserialise response
                     let deserialised_response = response.json::<WeatherResponse>().unwrap();
+
+                    log_good!(
+                        "retrieved current weather data - data: \n {:#?}",
+                        deserialised_response
+                    );
 
                     // send response back
                     tx.send(Ok(deserialised_response))

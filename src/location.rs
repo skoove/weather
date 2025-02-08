@@ -1,3 +1,4 @@
+#[derive(serde_derive::Deserialize, Debug)]
 pub struct Location {
     pub place_name: String,
     pub country_name: String,
