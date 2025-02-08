@@ -4,7 +4,6 @@ use crate::log_good;
 use crate::log_info;
 use crate::weather::request_weather;
 use crate::weather::WeatherResponse;
-use catppuccin_egui::{set_theme, MOCHA};
 use eframe::egui::Layout;
 use eframe::egui::Ui;
 use eframe::{self, egui};
@@ -13,7 +12,7 @@ use std::sync::mpsc::{self, Receiver, Sender};
 
 pub struct WeatherApp {
     weather_request_in_progress: bool,
-    weather_data: WeatherResponse,
+    weather_data: Option<WeatherResponse>,
     tx: Sender<Result<WeatherResponse, Error>>,
     rx: Receiver<Result<WeatherResponse, Error>>,
 }
@@ -22,8 +21,6 @@ impl WeatherApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         log_good!("created app");
 
-        // set_theme(&cc.egui_ctx, MOCHA);
-
         // make thread communication channels
         let (tx, rx) = mpsc::channel();
 
@@ -31,7 +28,7 @@ impl WeatherApp {
             weather_request_in_progress: false,
             tx,
             rx,
-            weather_data: WeatherResponse::no_data(),
+            weather_data: None,
         }
     }
 
@@ -49,7 +46,7 @@ impl WeatherApp {
                 self.weather_data = {
                     log_info!("{:#?}", data);
                     self.weather_request_in_progress = false;
-                    data.unwrap()
+                    Some(data.unwrap())
                 }
             }
             Err(_) => (),
@@ -79,13 +76,7 @@ impl eframe::App for WeatherApp {
                     ui.with_layout(Layout::right_to_left(egui::Align::Center), |ui| {});
                 })
             });
-
-        egui::CentralPanel::default().show(ctx, |ui| {
-            let wd = &self.weather_data;
-            ui.heading(format!(
-                "{}{}",
-                wd.current_weather.temperature, wd.current_weather_units.temperature
-            ));
-        });
+        // centeral panel for main content
+        egui::CentralPanel::default().show(ctx, |ui| {});
     }
 }
