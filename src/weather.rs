@@ -1,4 +1,5 @@
 use crate::location::Location;
+#[allow(unused_imports)]
 use crate::{log_bad, log_good, log_info, log_warn};
 use reqwest::Error;
 use serde_derive;
@@ -65,7 +66,7 @@ pub fn request_weather(location: Location, tx: Sender<Result<WeatherResponse, Er
             // request the url, if it fails try again 3 times, if that fails return nothing
             match reqwest::blocking::get(&url) {
                 Ok(response) => {
-                    log_good!("retrieved current weather data");
+                    log_good!("retrieved current weather dataself.rx.try_recv()");
 
                     // deserialise response
                     let deserialised_response = response.json::<WeatherResponse>().unwrap();
@@ -78,8 +79,7 @@ pub fn request_weather(location: Location, tx: Sender<Result<WeatherResponse, Er
                 Err(err) => {
                     attempts += 1;
                     if attempts == 3 {
-                        log_bad!("failed to retrieve current weather!");
-                        tx.send(Err(err)).expect("expected to send to thread");
+                        tx.send(Err(err)).expect("expected to send to main thread");
                         break;
                     } else {
                         log_warn!("failed to retrive weather data, attempt {}/3", attempts);
