@@ -1,6 +1,5 @@
-use serde::Deserialize;
 use serde_derive::Deserialize;
-use std::{sync::mpsc::Sender, thread, time::Instant};
+use std::{thread, time::Instant};
 
 #[allow(unused_imports)]
 use crate::{log_bad, log_good, log_info};

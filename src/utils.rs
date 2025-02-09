@@ -15,7 +15,7 @@ macro_rules! log_bad {
         let timestamp = chrono::Local::now().format("[%H:%M:%S]");
         let text = format!($($arg)*);
         println!("{} {} {}", status, timestamp, text);
-    };
+        };
 }
 
 #[macro_export]

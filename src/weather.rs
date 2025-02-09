@@ -3,8 +3,7 @@ use crate::location::Location;
 use crate::{log_bad, log_good, log_info, log_warn};
 use reqwest::Error;
 use serde_derive;
-use std::sync::mpsc::Sender;
-use std::thread;
+use std::thread::{self, JoinHandle};
 
 const WEATHER_API: &str = "https://api.open-meteo.com/v1/forecast?";
 
@@ -41,7 +40,7 @@ pub struct CurrentWeatherUnits {
     pub weathercode: String,
 }
 
-pub fn request_weather(location: Location, tx: Sender<Result<WeatherResponse, Error>>) {
+pub fn request_weather(location: Location) -> JoinHandle<Result<WeatherResponse, Error>> {
     thread::spawn(move || {
         // pull coords out
         let (lat, long) = location.coordinates;
@@ -51,46 +50,19 @@ pub fn request_weather(location: Location, tx: Sender<Result<WeatherResponse, Er
             ..
         } = location;
 
-        let data_to_request = "current_weather=true";
-
-        // data to request
-        let url = format!("{WEATHER_API}latitude={lat}&longitude={long}&{data_to_request}");
-
-        let mut attempts = 0;
+        let url = format!("{WEATHER_API}latitude={lat}&longitude={long}&current_weather=true");
 
         log_info!(
             "attempting to retrive current weather for {}, {}",
             place_name,
             country_name
         );
-
-        loop {
-            // request the url, if it fails try again 3 times, if that fails return nothing
-            match reqwest::blocking::get(&url) {
-                Ok(response) => {
-                    // deserialise response
-                    let deserialised_response = response.json::<WeatherResponse>().unwrap();
-
-                    log_good!(
-                        "retrieved current weather data - data: \n {:#?}",
-                        deserialised_response
-                    );
-
-                    // send response back
-                    tx.send(Ok(deserialised_response))
-                        .expect("expected to send to thread");
-                    break;
-                }
-                Err(err) => {
-                    attempts += 1;
-                    if attempts == 3 {
-                        tx.send(Err(err)).expect("expected to send to main thread");
-                        break;
-                    } else {
-                        log_warn!("failed to retrive weather data, attempt {}/3", attempts);
-                    }
-                }
-            }
-        }
-    });
+        let response = reqwest::blocking::get(&url)?;
+        let deserialised_response = response.json::<WeatherResponse>()?;
+        log_good!(
+            "retrieved current weather data - data: \n {:#?}",
+            deserialised_response
+        );
+        Ok(deserialised_response)
+    })
 }
