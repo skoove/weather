@@ -3,8 +3,7 @@ use crate::location::Location;
 use crate::{log_bad, log_good, log_info, log_warn};
 use reqwest::Error;
 use serde_derive;
-use std::sync::mpsc::Sender;
-use std::thread;
+use std::thread::{self, JoinHandle};
 
 const WEATHER_API: &str = "https://api.open-meteo.com/v1/forecast?";
 
@@ -41,7 +40,7 @@ pub struct CurrentWeatherUnits {
     pub weathercode: String,
 }
 
-pub fn request_weather(location: Location, tx: Sender<Result<WeatherResponse, Error>>) {
+pub fn request_weather(location: Location) -> JoinHandle<Result<WeatherResponse, Error>> {
     thread::spawn(move || {
         // pull coords out
         let (lat, long) = location.coordinates;
@@ -77,20 +76,17 @@ pub fn request_weather(location: Location, tx: Sender<Result<WeatherResponse, Er
                     );
 
                     // send response back
-                    tx.send(Ok(deserialised_response))
-                        .expect("expected to send to thread");
-                    break;
+                    return Ok(deserialised_response);
                 }
                 Err(err) => {
                     attempts += 1;
                     if attempts == 3 {
-                        tx.send(Err(err)).expect("expected to send to main thread");
-                        break;
+                        return Err(err);
                     } else {
                         log_warn!("failed to retrive weather data, attempt {}/3", attempts);
                     }
                 }
             }
         }
-    });
+    })
 }
