@@ -1,3 +1,5 @@
+use serde::Deserialize;
+use serde_derive::Deserialize;
 use std::{sync::mpsc::Sender, thread, time::Instant};
 
 #[allow(unused_imports)]
@@ -11,9 +13,21 @@ pub struct Location {
     pub request_time: Instant,
 }
 
-pub struct LocationResponse {
+pub struct LocationList {
+    query: String,
     pub locations: Box<[Location]>,
     pub request_time: Instant,
+}
+
+#[derive(Deserialize)]
+struct LocationResponse {
+    results: Box<LocationResponseItem>,
+}
+
+#[derive(Deserialize)]
+struct LocationResponseItem {
+    name: String,
+    country: String,
 }
 
 impl Default for Location {
