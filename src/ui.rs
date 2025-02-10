@@ -4,7 +4,6 @@ use crate::weather::request_weather;
 use crate::weather::WeatherResponse;
 #[allow(unused_imports)]
 use crate::{log_bad, log_good, log_info};
-use colored::Colorize;
 use eframe::egui::Color32;
 use eframe::egui::Context;
 use eframe::egui::Frame;
@@ -13,8 +12,8 @@ use eframe::egui::Margin;
 use eframe::egui::Ui;
 use eframe::{self, egui};
 use reqwest::Error;
+use std::env;
 use std::thread::JoinHandle;
-use std::time::Duration;
 use std::time::Instant;
 
 #[derive(Debug)]
@@ -23,11 +22,24 @@ pub struct WeatherApp {
     input: Input,
     weather_handle: Option<JoinHandle<Result<WeatherResponse, Error>>>,
     last_error: Option<(Instant, String)>,
+    debug_mode: bool,
 }
 #[derive(Debug)]
 struct Input {
     location_box_contents: String,
     location_box_query: String,
+}
+
+/// checks if debug flag passed (-d or --debug)
+fn parse_arguments() -> bool {
+    let arguments: Vec<String> = env::args().collect();
+    log_info!("arguments: {:?}", &arguments);
+    if arguments.iter().any(|e| e == "-d" || e == "--debug") {
+        log_info!("debug mode enabled!");
+        return true;
+    } else {
+        return false;
+    }
 }
 
 impl WeatherApp {
@@ -44,6 +56,7 @@ impl WeatherApp {
             weather_handle: None,
             input,
             last_error: None,
+            debug_mode: parse_arguments(),
         }
     }
 
@@ -99,6 +112,12 @@ impl WeatherApp {
         }
     }
 
+    fn debug_button(&mut self, ui: &mut Ui) {
+        if ui.button("🐞").clicked() {
+            self.debug_mode = !self.debug_mode;
+        }
+    }
+
     fn location_box(&mut self, ui: &mut Ui) {
         let text_box = ui.text_edit_singleline(&mut self.input.location_box_contents);
         // if box is unfocused and there is weather data avalible, then display the location
@@ -146,14 +165,18 @@ impl eframe::App for WeatherApp {
                     });
 
                     // second group: right aligned
-                    ui.with_layout(Layout::right_to_left(egui::Align::Center), |ui| {});
+                    ui.with_layout(Layout::right_to_left(egui::Align::Center), |ui| {
+                        self.debug_button(ui);
+                    });
                 })
             });
         // centeral panel for main content
         egui::CentralPanel::default().show(ctx, |ui| {
-            self.location_box(ui);
-
-            // debug stuff
+            if self.debug_mode == true {
+                self.debug_panel(ui);
+            } else {
+                self.location_box(ui);
+            }
         });
     }
 }
