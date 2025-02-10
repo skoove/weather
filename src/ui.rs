@@ -4,11 +4,15 @@ use crate::weather::request_weather;
 use crate::weather::WeatherResponse;
 #[allow(unused_imports)]
 use crate::{log_bad, log_good, log_info};
+use catppuccin_egui::Theme;
+use catppuccin_egui::LATTE;
+use catppuccin_egui::{set_theme, MOCHA};
 use eframe::egui::Color32;
 use eframe::egui::Context;
 use eframe::egui::Frame;
 use eframe::egui::Layout;
 use eframe::egui::Margin;
+use eframe::egui::ScrollArea;
 use eframe::egui::Ui;
 use eframe::{self, egui};
 use reqwest::Error;
@@ -23,6 +27,7 @@ pub struct WeatherApp {
     weather_handle: Option<JoinHandle<Result<WeatherResponse, Error>>>,
     last_error: Option<(Instant, String)>,
     debug_mode: bool,
+    theme: Theme,
 }
 #[derive(Debug)]
 struct Input {
@@ -43,8 +48,17 @@ fn parse_arguments() -> bool {
 }
 
 impl WeatherApp {
-    pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         log_good!("created app");
+        let ctx = &cc.egui_ctx;
+
+        let start_theme: Theme = MOCHA;
+
+        set_theme(ctx, start_theme);
+
+        ctx.style_mut(|theme| {
+            theme.visuals.widgets.inactive.bg_stroke.color = Color32::TRANSPARENT
+        });
 
         let input = Input {
             location_box_contents: "enter location here!".to_string(),
@@ -57,6 +71,7 @@ impl WeatherApp {
             input,
             last_error: None,
             debug_mode: parse_arguments(),
+            theme: start_theme,
         }
     }
 
@@ -103,7 +118,8 @@ impl WeatherApp {
         if ui.button("error test").clicked() {
             self.error("this is a test error".to_string());
         }
-        ui.label(format!("{:#?}", self));
+
+        ScrollArea::vertical().show(ui, |ui| ui.label(format!("{:#?}", self)));
     }
 
     fn refresh_button(&mut self, ui: &mut Ui) {
@@ -115,6 +131,36 @@ impl WeatherApp {
     fn debug_button(&mut self, ui: &mut Ui) {
         if ui.button("🐞").clicked() {
             self.debug_mode = !self.debug_mode;
+        }
+    }
+
+    fn set_theme(&self, ctx: &Context) {
+        catppuccin_egui::set_theme(ctx, self.theme);
+        ctx.style_mut(|theme| {
+            theme.visuals.widgets.inactive.bg_stroke.color = Color32::TRANSPARENT
+        });
+    }
+
+    fn toggle_theme(&mut self, ctx: &Context) {
+        if self.theme == MOCHA {
+            self.theme = LATTE;
+            log_info!("toggled theme to latte");
+        } else if self.theme == LATTE {
+            self.theme = MOCHA;
+            log_info!("toggled theme to mocha");
+        }
+        self.set_theme(ctx);
+    }
+
+    fn theme_button(&mut self, ui: &mut Ui, ctx: &Context) {
+        let symbol = match self.theme {
+            MOCHA => "☀",
+            LATTE => "🌙",
+            _ => "uh oh",
+        };
+        let button = ui.button(format!("{symbol}"));
+        if button.clicked() {
+            self.toggle_theme(ctx);
         }
     }
 
@@ -166,6 +212,7 @@ impl eframe::App for WeatherApp {
 
                     // second group: right aligned
                     ui.with_layout(Layout::right_to_left(egui::Align::Center), |ui| {
+                        self.theme_button(ui, ctx);
                         self.debug_button(ui);
                     });
                 })
