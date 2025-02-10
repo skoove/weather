@@ -83,6 +83,16 @@ impl WeatherApp {
         };
     }
 
+    fn debug_panel(&mut self, ui: &mut Ui) {
+        if ui.button("geocoding test").clicked() {
+            location_query("brisbane".to_string(), 10);
+        }
+        if ui.button("error test").clicked() {
+            self.error("this is a test error".to_string());
+        }
+        ui.label(format!("{:#?}", self));
+    }
+
     fn refresh_button(&mut self, ui: &mut Ui) {
         if ui.button("↻").clicked() {
             self.weather_handle = Some(request_weather(Location::default()));
@@ -91,7 +101,6 @@ impl WeatherApp {
 
     fn location_box(&mut self, ui: &mut Ui) {
         let text_box = ui.text_edit_singleline(&mut self.input.location_box_contents);
-
         // if box is unfocused and there is weather data avalible, then display the location
         // tied to that data
         if !text_box.has_focus() {
@@ -106,7 +115,6 @@ impl WeatherApp {
                 }
             }
         }
-
         // when boxes data changes change query and send request (todo), when the box looses focus
         // keep query the same
         if text_box.has_focus() {
@@ -146,14 +154,6 @@ impl eframe::App for WeatherApp {
             self.location_box(ui);
 
             // debug stuff
-            if ui.button("call terst function!!!").clicked() {
-                location_query("boob".to_string(), 10);
-            }
-            if ui.button("error test").clicked() {
-                self.error("yopu clkiekd the button".to_string());
-            }
-            ui.heading("everything");
-            ui.label(format!("{:#?}", self));
         });
     }
 }
