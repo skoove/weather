@@ -1,3 +1,4 @@
+mod debug_panel;
 mod location;
 mod ui;
 mod utils;
@@ -13,7 +14,7 @@ fn main() {
     eframe::run_native(
         "weather",
         native_options,
-        Box::new(|cc| Ok(Box::new(WeatherApp::new(&cc)))),
+        Box::new(|cc| Ok(Box::new(WeatherApp::new(cc)))),
     )
     .unwrap();
 }
