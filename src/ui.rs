@@ -110,7 +110,11 @@ impl WeatherApp {
     }
 
     fn debug_button(&mut self, ui: &mut Ui) {
-        if ui.button("🐞").clicked() {
+        let button = ui.button("🐞");
+        if self.debug_mode == true {
+            button.clone().highlight();
+        }
+        if button.clicked() {
             self.debug_mode = !self.debug_mode;
         }
     }
