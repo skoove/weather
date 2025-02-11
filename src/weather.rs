@@ -2,7 +2,6 @@ use crate::location::Location;
 #[allow(unused_imports)]
 use crate::{log_bad, log_good, log_info, log_warn};
 use reqwest::Error;
-use serde_derive;
 use std::thread::{self, JoinHandle};
 
 const WEATHER_API: &str = "https://api.open-meteo.com/v1/forecast?";

@@ -1,4 +1,3 @@
-use crate::location::location_query;
 use crate::location::Location;
 use crate::weather::request_weather;
 use crate::weather::WeatherResponse;
@@ -7,14 +6,7 @@ use crate::{log_bad, log_good, log_info};
 use catppuccin_egui::Theme;
 use catppuccin_egui::LATTE;
 use catppuccin_egui::{set_theme, MOCHA};
-use eframe::egui::Color32;
-use eframe::egui::Context;
-use eframe::egui::Frame;
-use eframe::egui::Layout;
-use eframe::egui::Margin;
-use eframe::egui::ScrollArea;
-use eframe::egui::Ui;
-use eframe::{self, egui};
+use eframe::egui::{self, Color32, Context, Frame, Layout, Margin, Ui};
 use reqwest::Error;
 use std::env;
 use std::thread::JoinHandle;
@@ -22,7 +14,7 @@ use std::time::Instant;
 
 #[derive(Debug)]
 pub struct WeatherApp {
-    weather_data: Option<WeatherResponse>,
+    pub weather_data: Option<WeatherResponse>,
     input: Input,
     weather_handle: Option<JoinHandle<Result<WeatherResponse, Error>>>,
     last_error: Option<(Instant, String)>,
@@ -41,9 +33,9 @@ fn parse_arguments() -> bool {
     log_info!("arguments: {:?}", &arguments);
     if arguments.iter().any(|e| e == "-d" || e == "--debug") {
         log_info!("debug mode enabled!");
-        return true;
+        true
     } else {
-        return false;
+        false
     }
 }
 
@@ -75,7 +67,7 @@ impl WeatherApp {
         }
     }
 
-    fn error(&mut self, error: String) {
+    pub fn error(&mut self, error: String) {
         self.last_error = Some((Instant::now(), error))
     }
 
@@ -93,7 +85,7 @@ impl WeatherApp {
                 .frame(frame)
                 .show(ctx, |ui| {
                     ui.visuals_mut().override_text_color = Some(self.theme.base);
-                    ui.heading(format!("{}", text));
+                    ui.heading(text);
                 });
         }
     }
@@ -109,17 +101,6 @@ impl WeatherApp {
                 self.error("failed to retrieve weather data!".to_string());
             }
         };
-    }
-
-    fn debug_panel(&mut self, ui: &mut Ui) {
-        if ui.button("geocoding test").clicked() {
-            location_query("brisbane".to_string(), 10);
-        }
-        if ui.button("error test").clicked() {
-            self.error("this is a test error".to_string());
-        }
-
-        ScrollArea::vertical().show(ui, |ui| ui.label(format!("{:#?}", self)));
     }
 
     fn refresh_button(&mut self, ui: &mut Ui) {
@@ -158,7 +139,7 @@ impl WeatherApp {
             LATTE => "🌙",
             _ => "uh oh",
         };
-        let button = ui.button(format!("{symbol}"));
+        let button = ui.button(symbol);
         if button.clicked() {
             self.toggle_theme(ctx);
         }
@@ -219,7 +200,7 @@ impl eframe::App for WeatherApp {
             });
         // centeral panel for main content
         egui::CentralPanel::default().show(ctx, |ui| {
-            if self.debug_mode == true {
+            if self.debug_mode {
                 self.debug_panel(ui);
             } else {
                 self.location_box(ui);

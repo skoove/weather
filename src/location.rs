@@ -36,7 +36,7 @@ impl Default for Location {
         Self {
             place_name: "Brisbane".to_string(),
             country_name: "Australia".to_string(),
-            coordinates: (-27.4705, 153.0260),
+            coordinates: (-27.4705, 153.026),
             request_time: Instant::now(),
         }
     }
