@@ -87,12 +87,12 @@ impl WeatherApp {
             self.last_error = None
         } else {
             let frame = Frame::default();
-            let frame = frame.fill(Color32::from_rgb(200, 120, 120));
+            let frame = frame.fill(self.theme.red);
             let frame = frame.inner_margin(Margin::same(10.0));
             egui::TopBottomPanel::bottom("error")
                 .frame(frame)
                 .show(ctx, |ui| {
-                    ui.visuals_mut().override_text_color = Some(Color32::from_rgb(0, 0, 0));
+                    ui.visuals_mut().override_text_color = Some(self.theme.base);
                     ui.heading(format!("{}", text));
                 });
         }
