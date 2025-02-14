@@ -15,16 +15,16 @@ use std::time::Instant;
 #[derive(Debug)]
 pub struct WeatherApp {
     pub weather_data: Option<WeatherResponse>,
-    input: Input,
+    pub location_input: LocationInput,
     weather_handle: Option<JoinHandle<Result<WeatherResponse, Error>>>,
     last_error: Option<(Instant, String)>,
     debug_mode: bool,
     theme: Theme,
 }
 #[derive(Debug)]
-struct Input {
-    location_box_contents: String,
-    location_box_query: String,
+pub struct LocationInput {
+    pub location_box_contents: String,
+    pub location_box_query: String,
 }
 
 /// checks if debug flag passed (-d or --debug)
@@ -52,7 +52,7 @@ impl WeatherApp {
             theme.visuals.widgets.inactive.bg_stroke.color = Color32::TRANSPARENT
         });
 
-        let input = Input {
+        let input = LocationInput {
             location_box_contents: "enter location here!".to_string(),
             location_box_query: "".to_string(),
         };
@@ -60,7 +60,7 @@ impl WeatherApp {
         Self {
             weather_data: None,
             weather_handle: None,
-            input,
+            location_input: input,
             last_error: None,
             debug_mode: parse_arguments(),
             theme: start_theme,
@@ -103,15 +103,15 @@ impl WeatherApp {
         };
     }
 
-    fn refresh_button(&mut self, ui: &mut Ui) {
-        if ui.button("↻").clicked() {
+    pub fn weather_request_button(&mut self, ui: &mut Ui, text: &str) {
+        if ui.button(text).clicked() {
             self.weather_handle = Some(request_weather(Location::default()));
         }
     }
 
     fn debug_button(&mut self, ui: &mut Ui) {
         let button = ui.button("🐞");
-        if self.debug_mode == true {
+        if self.debug_mode {
             button.clone().highlight();
         }
         if button.clicked() {
@@ -149,8 +149,8 @@ impl WeatherApp {
         }
     }
 
-    fn location_box(&mut self, ui: &mut Ui) {
-        let text_box = ui.text_edit_singleline(&mut self.input.location_box_contents);
+    pub fn location_box(&mut self, ui: &mut Ui) {
+        let text_box = ui.text_edit_singleline(&mut self.location_input.location_box_contents);
         // if box is unfocused and there is weather data avalible, then display the location
         // tied to that data
         if !text_box.has_focus() {
@@ -158,17 +158,18 @@ impl WeatherApp {
                 Some(data) => {
                     let place = &data.location.place_name;
                     let country = &data.location.country_name;
-                    self.input.location_box_contents = format!("{place}, {country}")
+                    self.location_input.location_box_contents = format!("{place}, {country}")
                 }
                 None => {
-                    self.input.location_box_contents = "enter location here!".to_string();
+                    self.location_input.location_box_contents = "enter location here!".to_string();
                 }
             }
         }
         // when boxes data changes change query and send request (todo), when the box looses focus
         // keep query the same
         if text_box.has_focus() {
-            self.input.location_box_query = self.input.location_box_contents.clone();
+            self.location_input.location_box_query =
+                self.location_input.location_box_contents.clone();
         }
     }
 }
@@ -192,7 +193,7 @@ impl eframe::App for WeatherApp {
                 ui.horizontal_centered(|ui| {
                     // first group: left aligned
                     ui.with_layout(Layout::left_to_right(egui::Align::Center), |ui| {
-                        self.refresh_button(ui);
+                        self.weather_request_button(ui, "⟳");
                     });
 
                     // second group: right aligned
