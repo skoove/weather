@@ -1,5 +1,8 @@
 use serde_derive::Deserialize;
-use std::{thread, time::Instant};
+use std::{
+    thread::{self, JoinHandle},
+    time::Instant,
+};
 
 #[allow(unused_imports)]
 use crate::{log_bad, log_good, log_info};
@@ -12,15 +15,17 @@ pub struct Location {
     pub request_time: Instant,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct LocationResponse {
-    results: Box<LocationResponseItem>,
+    results: Vec<LocationResponseItem>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct LocationResponseItem {
     name: String,
     country: String,
+    latitude: f32,
+    longitude: f32,
 }
 
 impl Default for Location {
@@ -36,13 +41,27 @@ impl Default for Location {
     }
 }
 
-pub fn location_query(query: String, count: i8 /* , tx: Sender<LocationResponse> */) {
+pub fn location_query(
+    query: String,
+    count: i8,
+) -> JoinHandle<Result<Vec<Location>, reqwest::Error>> {
+    let time = Instant::now();
     thread::spawn(move || {
         let request = format!(
             "https://geocoding-api.open-meteo.com/v1/search?name={}&count={}&language=en&format=json",
             query, count
         );
-        let response = reqwest::blocking::get(request).unwrap().text().unwrap();
-        log_info!("\n{}", response);
-    });
+        let response = reqwest::blocking::get(request)?.json::<LocationResponse>()?;
+        let mut locations = Vec::new();
+        for location in response.results {
+            let fmt_location = Location {
+                place_name: location.name,
+                country_name: location.country,
+                coordinates: (location.latitude, location.longitude),
+                request_time: time,
+            };
+            locations.push(fmt_location);
+        }
+        Ok(locations)
+    })
 }
