@@ -49,7 +49,10 @@ impl WeatherApp {
                 ui.horizontal(|ui| {
                     self.location_box(ui);
                 });
+                ui.separator();
+                ui.label(format!("{:#?}", self.location_handle));
                 ui.label(format!("{:#?}", self.location_input));
+                ui.label(format!("{:#?}", self.locations));
             });
         });
     }

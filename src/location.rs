@@ -7,7 +7,7 @@ use std::{
 #[allow(unused_imports)]
 use crate::{log_bad, log_good, log_info};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Location {
     pub place_name: String,
     pub country_name: String,
@@ -45,13 +45,16 @@ pub fn location_query(
     query: String,
     count: i8,
 ) -> JoinHandle<Result<Vec<Location>, reqwest::Error>> {
+    log_info!("searching for {count} results for {query}");
     let time = Instant::now();
     thread::spawn(move || {
         let request = format!(
             "https://geocoding-api.open-meteo.com/v1/search?name={}&count={}&language=en&format=json",
             query, count
         );
-        let response = reqwest::blocking::get(request)?.json::<LocationResponse>()?;
+        let response = reqwest::blocking::get(request)?;
+        let response = response.json::<LocationResponse>()?;
+        println!("{response:#?}");
         let mut locations = Vec::new();
         for location in response.results {
             let fmt_location = Location {
@@ -62,6 +65,7 @@ pub fn location_query(
             };
             locations.push(fmt_location);
         }
+        log_good!("got {count} location results for query {query}");
         Ok(locations)
     })
 }

@@ -58,10 +58,6 @@ pub fn request_weather(location: Location) -> JoinHandle<Result<WeatherResponse,
         );
         let response = reqwest::blocking::get(&url)?;
         let deserialised_response = response.json::<WeatherResponse>()?;
-        log_good!(
-            "retrieved current weather data - data: \n {:#?}",
-            deserialised_response
-        );
         Ok(deserialised_response)
     })
 }
