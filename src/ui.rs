@@ -3,9 +3,7 @@ use crate::weather::request_weather;
 use crate::weather::WeatherResponse;
 #[allow(unused_imports)]
 use crate::{log_bad, log_good, log_info};
-use catppuccin_egui::Theme;
-use catppuccin_egui::LATTE;
-use catppuccin_egui::{set_theme, MOCHA};
+use catppuccin_egui::{set_theme, Theme, LATTE, MOCHA};
 use eframe::egui::{self, Color32, Context, Frame, Layout, Margin, Ui};
 use reqwest::Error;
 use std::env;
