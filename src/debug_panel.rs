@@ -6,7 +6,7 @@ impl WeatherApp {
     pub fn debug_panel(&mut self, ui: &mut Ui) {
         ui.with_layout(Layout::left_to_right(egui::Align::Min), |ui| {
             if ui.button("geocoding test").clicked() {
-                location_query("brisbane".to_string(), 1);
+                location_query("brisbane".to_string(), 5);
             }
             if ui.button("error test").clicked() {
                 self.error("this is a test error".to_string());
