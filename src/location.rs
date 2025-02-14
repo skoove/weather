@@ -12,12 +12,6 @@ pub struct Location {
     pub request_time: Instant,
 }
 
-pub struct LocationList {
-    query: String,
-    pub locations: Box<[Location]>,
-    pub request_time: Instant,
-}
-
 #[derive(Deserialize)]
 struct LocationResponse {
     results: Box<LocationResponseItem>,
