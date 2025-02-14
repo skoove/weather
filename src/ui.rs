@@ -15,8 +15,10 @@ pub struct WeatherApp {
     pub weather_data: Option<WeatherResponse>,
     pub location_input: LocationInput,
     weather_handle: Option<JoinHandle<Result<WeatherResponse, Error>>>,
+    location_handle: Option<JoinHandle<Result<Vec<Location>, Error>>>,
     last_error: Option<(Instant, String)>,
     debug_mode: bool,
+    locations: Vec<Location>,
     theme: Theme,
 }
 #[derive(Debug)]
@@ -58,7 +60,9 @@ impl WeatherApp {
         Self {
             weather_data: None,
             weather_handle: None,
+            location_handle: None,
             location_input: input,
+            locations: vec![Location::default()],
             last_error: None,
             debug_mode: parse_arguments(),
             theme: start_theme,
