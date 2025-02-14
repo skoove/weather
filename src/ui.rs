@@ -1,3 +1,4 @@
+use crate::location::location_query;
 use crate::location::Location;
 use crate::weather::request_weather;
 use crate::weather::WeatherResponse;
@@ -5,6 +6,7 @@ use crate::weather::WeatherResponse;
 use crate::{log_bad, log_good, log_info};
 use catppuccin_egui::{set_theme, Theme, LATTE, MOCHA};
 use eframe::egui::{self, Color32, Context, Frame, Layout, Margin, Ui};
+use egui_autocomplete::AutoCompleteTextEdit;
 use reqwest::Error;
 use std::env;
 use std::thread::JoinHandle;
@@ -15,16 +17,16 @@ pub struct WeatherApp {
     pub weather_data: Option<WeatherResponse>,
     pub location_input: LocationInput,
     weather_handle: Option<JoinHandle<Result<WeatherResponse, Error>>>,
-    location_handle: Option<JoinHandle<Result<Vec<Location>, Error>>>,
+    pub location_handle: Option<JoinHandle<Result<Vec<Location>, Error>>>,
     last_error: Option<(Instant, String)>,
     debug_mode: bool,
-    locations: Vec<Location>,
+    pub locations: Vec<Location>,
     theme: Theme,
 }
 #[derive(Debug)]
 pub struct LocationInput {
     pub location_box_contents: String,
-    pub location_box_query: String,
+    location_box_inputs: Vec<String>,
 }
 
 /// checks if debug flag passed (-d or --debug)
@@ -54,7 +56,7 @@ impl WeatherApp {
 
         let input = LocationInput {
             location_box_contents: "enter location here!".to_string(),
-            location_box_query: "".to_string(),
+            location_box_inputs: vec!["iasdfhusdf".to_string()],
         };
 
         Self {
@@ -62,7 +64,7 @@ impl WeatherApp {
             weather_handle: None,
             location_handle: None,
             location_input: input,
-            locations: vec![Location::default()],
+            locations: Vec::new(),
             last_error: None,
             debug_mode: parse_arguments(),
             theme: start_theme,
@@ -71,6 +73,15 @@ impl WeatherApp {
 
     pub fn error(&mut self, error: String) {
         self.last_error = Some((Instant::now(), error))
+    }
+
+    fn locations_to_strings(&mut self) {
+        let mut strings: Vec<String> = Vec::new();
+        for location in self.locations.clone() {
+            let string = format!("{}, {}", location.place_name, location.country_name);
+            strings.push(string);
+        }
+        self.location_input.location_box_inputs = strings;
     }
 
     fn display_error(&mut self, ctx: &Context) {
@@ -92,6 +103,10 @@ impl WeatherApp {
         }
     }
 
+    pub fn request_weather_gui(&mut self) {
+        self.weather_handle = Some(request_weather(self.locations[0].clone()));
+    }
+
     fn try_recv_wdata(&mut self) {
         let Some(handle) = self.weather_handle.take_if(|h| h.is_finished()) else {
             return;
@@ -99,15 +114,28 @@ impl WeatherApp {
         match handle.join().expect("expected to join thread!") {
             Ok(data) => self.weather_data = Some(data),
             Err(err) => {
-                log_bad!("failed to retreive weather data! error:\n{}", err);
+                log_bad!("failed to retreive weather data! error:{}", err);
                 self.error("failed to retrieve weather data!".to_string());
+            }
+        };
+    }
+
+    fn try_recv_location(&mut self) {
+        let Some(handle) = self.location_handle.take_if(|h| h.is_finished()) else {
+            return;
+        };
+        match handle.join().expect("expected to join thread!") {
+            Ok(data) => self.locations = data,
+            Err(err) => {
+                log_bad!("failed to retreive location! error: {}", err);
+                self.error("failed to retrieve location!".to_string());
             }
         };
     }
 
     pub fn weather_request_button(&mut self, ui: &mut Ui, text: &str) {
         if ui.button(text).clicked() {
-            self.weather_handle = Some(request_weather(Location::default()));
+            self.request_weather_gui();
         }
     }
 
@@ -152,26 +180,28 @@ impl WeatherApp {
     }
 
     pub fn location_box(&mut self, ui: &mut Ui) {
-        let text_box = ui.text_edit_singleline(&mut self.location_input.location_box_contents);
-        // if box is unfocused and there is weather data avalible, then display the location
-        // tied to that data
-        if !text_box.has_focus() {
-            match &self.weather_data {
-                Some(data) => {
-                    let place = &data.location.place_name;
-                    let country = &data.location.country_name;
-                    self.location_input.location_box_contents = format!("{place}, {country}")
-                }
-                None => {
-                    self.location_input.location_box_contents = "enter location here!".to_string();
-                }
-            }
-        }
-        // when boxes data changes change query and send request (todo), when the box looses focus
-        // keep query the same
+        let text_box = ui.add(
+            AutoCompleteTextEdit::new(
+                &mut self.location_input.location_box_contents,
+                &self.location_input.location_box_inputs,
+            )
+            .highlight_matches(true),
+        );
+
         if text_box.has_focus() {
-            self.location_input.location_box_query =
-                self.location_input.location_box_contents.clone();
+            if self.location_handle.is_none() {
+                self.location_handle = Some(location_query(
+                    self.location_input.location_box_contents.clone(),
+                    5,
+                ));
+            }
+            self.locations_to_strings();
+        }
+
+        if text_box.lost_focus() {
+            log_info!("location box lost focus");
+            dbg!(&self.locations[0]);
+            request_weather(self.locations[0].clone());
         }
     }
 }
@@ -180,11 +210,12 @@ impl eframe::App for WeatherApp {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
         // if there is no weather request in progress and there is
         // no data present, start request for default location
-        if self.weather_handle.is_none() & self.weather_data.is_none() {
-            self.weather_handle = Some(request_weather(Location::default()));
-        }
+        // if self.weather_handle.is_none() & self.weather_data.is_none() {
+        //     self.weather_handle = Some(request_weather(Location::default()));
+        // }
 
         self.try_recv_wdata();
+        self.try_recv_location();
         self.display_error(ctx);
 
         // make a top bar for some buttons
@@ -207,6 +238,9 @@ impl eframe::App for WeatherApp {
             });
         // centeral panel for main content
         egui::CentralPanel::default().show(ctx, |ui| {
+            if ui.button("ujisdfgihu").clicked() {
+                self.location_handle = Some(location_query("poop".to_string(), 5));
+            };
             if self.debug_mode {
                 self.debug_panel(ui);
             } else {

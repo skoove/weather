@@ -4,11 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-chrono = "0.4.38"
-colored = "2.1.0"
+chrono = "0.4.39"
+colored = "2.2.0"
 eframe = "0.29.1"
-reqwest = {version = "0.12.8", features = ["json", "blocking"]}
-serde = "1.0.213"
-serde_derive = "1.0.213"
-serde_json = "1.0.132"
+egui_autocomplete = "8.0.0"
+reqwest = {version = "0.12.12", features = ["json", "blocking"]}
+serde = "1.0.217"
+serde_derive = "1.0.217"
+serde_json = "1.0.138"
 catppuccin-egui = { version = "5.3.1", default-features = false, features = ["egui29"] }
